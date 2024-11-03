@@ -1,14 +1,121 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My First Site</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/5.0.0-alpha1/css/bootstrap.min.css" integrity="sha384-r4NyP46KrjDleawBgD5tp8Y7UzmLA05oM1iAEQ17CSuDqnUK2+k9luXQOfXJCJ4I" crossorigin="anonymous">
-    <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/5.0.0-alpha1/css/bootstrap.min.css"
+        integrity="sha384-r4NyP46KrjDleawBgD5tp8Y7UzmLA05oM1iAEQ17CSuDqnUK2+k9luXQOfXJCJ4I" crossorigin="anonymous">
 </head>
+
 <body>
 
-    
+    <div class="container p-4 mt-3 border border-1 border-primary rounded">
+        <div class="row">
+            <div class="col-7">
+                <label for="adress" class="form-label">Token Address:</label>
+                <input type="text" class="form-control" id="adress" placeholder="Введите адрес токена">
+            </div>
+            <div class="col-3">
+                <label for="chain" class="form-label">Network:</label>
+                <select class="form-select" id="chain">
+                    <!-- Сюда добавятся сети -->
+                </select>
+            </div>
+            <div class="col-2 d-flex align-items-end">
+                <button class="btn btn-primary w-100" onclick="getTokenSecurity()">Gozle</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container p-4 mt-3 border border-1 border-success rounded" id="data">
+        <!-- Ответ API будет отображаться здесь -->
+    </div>
+
+    <script>
+        const URL_chains = "https://api.gopluslabs.io/api/v1/supported_chains";
+
+        function getSupportedChains() {
+            fetch(URL_chains)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Ошибка при загрузке сетей');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    setChains(data);
+                })
+                .catch(error => {
+                    setError(error);
+                });
+        }
+
+        function setChains(data) {
+            let result = data.result;
+            let inner = "";
+            result.forEach(element => {
+                inner += `<option value="${element.id}">${element.name}</option>`;
+            });
+            document.getElementById('chain').innerHTML = inner;
+        }
+
+        function setError(e) {
+            console.error('Произошла ошибка:', e);
+            document.getElementById('data').innerHTML = `<p class="text-danger">Ошибка: ${e.message}</p>`;
+        }
+
+        function getTokenSecurity() {
+            const dv = document.getElementById('data');
+            const token = document.getElementById('adress');
+            const chain = document.getElementById('chain');
+
+            // Проверяем, что введены все данные
+            if (!token.value || !chain.value) {
+                setError(new Error('Введите адрес токена и выберите сеть.'));
+                return;
+            }
+
+            let url = '';
+
+            if (chain.value === 'solana') {
+                url = `https://api.gopluslabs.io/api/v1/solana/token_security?contract_addresses=${token.value}`
+            }
+            else {
+                url = `https://api.gopluslabs.io/api/v1/token_security/${chain.value}?contract_addresses=${token.value}`;
+            }
+
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Ошибка при получении данных безопасности токена');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    displayData(data.result[token.value]);
+                })
+                .catch(error => {
+                    setError(error);
+                });
+        }
+
+        function displayData(data) {
+            const dv = document.getElementById('data');
+            dv.innerHTML = "<h5>Данные безопасности токена:</h5>";
+            const pre = document.createElement('pre');
+            pre.textContent = JSON.stringify(data, null, 2);
+            dv.appendChild(pre);
+        }
+
+        function main() {
+            getSupportedChains();
+        }
+
+        main();
+    </script>
+
 </body>
+
 </html>
